@@ -44,7 +44,7 @@ export default class BudgetTracker {
     }
 
     static entryHtml() {
-            return `
+        return `
                 <tr>
                     <td>
                         <input class="input input-date" type="date">
@@ -56,7 +56,7 @@ export default class BudgetTracker {
                     <td>
                         <select class="input input-type">
                             <option value="income">income</option>
-                            <option value="income">expense</option>
+                            <option value="expense">expense</option>
                         </select>
                     </td>
                     <td>
@@ -71,23 +71,50 @@ export default class BudgetTracker {
     }
 
     load() {
-          const entries = JSON.parse(localStorage.getItem("budget-tracker-entries-dev") || "[]");
-          
-            console.log(entries);
+        const entries = JSON.parse(localStorage.getItem("budget-tracker-entries-dev") || "[]");
 
-          for (const entry of entries ) {
+        console.log(entries);
+
+        for (const entry of entries) {
             this.addEntry(entry);
-          }
+        }
 
-          this.updateSummary();
+        this.updateSummary();
     }
 
     updateSummary() {
+        const total = this.getEntryRows().reduce((total, row) => {
+            const amount = row.querySelector(".input-amount").value;
+            const isExpense = row.querySelector(".input-type").value === "expense";
+            const modifier = isExpense ? -1 : 1;
 
+            return total + (amount * modifier); 
+        }, 0);
+
+        const totalFormatted = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD"
+        }).format(total);
+
+        this.root.querySelector(".total").textContent = totalFormatted;
     }
 
     save() {
-        console.log(this.getEntryRows());
+        const data = this.getEntryRows().map(row => {
+            return {
+                date: row.querySelector(".input-date").value,
+                description: row.querySelector(".input-description").value,
+                type: row.querySelector(".input-type").value,
+                amount: parseFloat(row.querySelector(".input-amount").value),
+
+
+
+            }
+        })
+
+        localStorage.setItem("budget-tracker-entries-dev", JSON.stringify(data));
+        this.updateSummary();
+
     }
 
     addEntry(entry = {}) {
@@ -118,6 +145,7 @@ export default class BudgetTracker {
     }
 
     onDeleteEntryBtnClick(e) {
-        console.log("Entry Deleted. ");
+        e.target.closest("tr").remove();
+        this.save();
     }
 }
